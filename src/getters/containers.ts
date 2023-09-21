@@ -7,18 +7,18 @@ export function getContainersNodes(
   endpoints: EndpointNode[]
 ): ContainerNode[] {
   return compact(
-    endpoints.flatMap(({ rawId }) => {
-      const snap = json.snapshots.find((s) => s.EndpointId === rawId);
+    endpoints.flatMap(({ id }) => {
+      const snap = json.snapshots.find((s) => s.EndpointId === id);
       if (!snap || !snap.Docker) {
         return;
       }
       return snap.Docker.DockerSnapshotRaw.Containers.map(
-        ({ Id, Command, Labels }): ContainerNode => ({
-          id: graphId('container', Id),
+        ({ Id, Labels, Names }): ContainerNode => ({
+          graphId: graphId('container', Id),
           type: 'container',
-          rawId: Id,
+          name: Names[0].slice(1),
+          id: Id,
           endpoint: snap.EndpointId,
-          name: Command,
           schedule: Labels['io.portainer.update.scheduleId'],
           edgeStack: parseInt(
             Labels['com.docker.compose.project.working_dir']?.split(

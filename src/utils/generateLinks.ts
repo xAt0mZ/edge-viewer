@@ -6,37 +6,8 @@ import {
   EndpointNode,
   ScheduleNode,
 } from '../types';
+import { LinkType } from '../hooks/useLinks';
 
-/* 
-endpoint
-container
-schedule
-edgegroups
-edgestack
-edgegroups
-tag
-envgroup
-
-container -> endpoint
-
-schedule -> edgestack
-
-edgestack -> edgegroup (static)
-
-edgestack -> tag (dynamic)
-tag -> endpoint
-tag -> envgroup
-envgroup -> endpoint
-
-
-
-*/
-type LinkType =
-  | 'container-to-endpoint'
-  | 'schedule-to-container'
-  | 'schedule-to-edgestack'
-  | 'edgestack-to-edgegroup'
-  | 'edgegroup-to-endpoint';
 type Link = {
   source: string;
   target: string;
@@ -63,6 +34,7 @@ export function generateLinks({
     ...schedulesToContainers(schedules, containers),
     ...schedulesToEdgeStacks(schedules, edgeStacks),
     ...edgeStacksToEdgeGroups(edgeStacks, edgeGroups),
+    ...edgeGroupsToEndpoints(edgeGroups, endpoints),
   ];
 }
 
@@ -72,13 +44,11 @@ function containersToEndpoints(
 ) {
   return compact<Link>(
     containers.map((c) => {
-      const endpoint = endpoints.find(({ rawId }) => rawId === c.endpoint);
-      if (!endpoint) {
-        return;
-      }
+      const endpoint = endpoints.find((e) => e.id === c.endpoint);
+      if (!endpoint) return;
       return {
-        source: c.id,
-        target: endpoint.id,
+        source: c.graphId,
+        target: endpoint.graphId,
         value: 1,
         type: 'container-to-endpoint',
       };
@@ -92,15 +62,11 @@ function schedulesToContainers(
 ) {
   return compact<Link>(
     containers.map((c) => {
-      const schedule = schedules.find(
-        ({ rawId }) => rawId.toString() === c.schedule
-      );
-      if (!schedule) {
-        return;
-      }
+      const schedule = schedules.find((s) => s.id.toString() === c.schedule);
+      if (!schedule) return;
       return {
-        source: schedule.id,
-        target: c.id,
+        source: schedule.graphId,
+        target: c.graphId,
         value: 1,
         type: 'schedule-to-container',
       };
@@ -114,11 +80,11 @@ function schedulesToEdgeStacks(
 ) {
   return compact<Link>(
     edgeStacks.map((e): Link | undefined => {
-      const schedule = schedules.find((s) => s.rawId === e.schedule);
+      const schedule = schedules.find((s) => s.id === e.schedule);
       if (!schedule) return;
       return {
-        source: schedule.id,
-        target: e.id,
+        source: schedule.graphId,
+        target: e.graphId,
         type: 'schedule-to-edgestack',
         value: 1,
       };
@@ -133,13 +99,33 @@ function edgeStacksToEdgeGroups(
   return compact<Link>(
     edgeStacks.flatMap((s) =>
       s.edgeGroups.map((e): Link | undefined => {
-        const group = edgeGroups.find((g) => g.rawId === e);
+        const group = edgeGroups.find((g) => g.id === e);
         if (!group) return;
         return {
-          source: s.id,
-          target: group.id,
+          source: s.graphId,
+          target: group.graphId,
           value: 1,
           type: 'edgestack-to-edgegroup',
+        };
+      })
+    )
+  );
+}
+
+function edgeGroupsToEndpoints(
+  edgeGroups: EdgeGroupNode[],
+  endpoints: EndpointNode[]
+) {
+  return compact<Link>(
+    edgeGroups.flatMap((g) =>
+      g.endpoints.map((e): Link | undefined => {
+        const endpoint = endpoints.find((i) => i.id === e);
+        if (!endpoint) return;
+        return {
+          source: g.graphId,
+          target: endpoint.graphId,
+          value: 1,
+          type: 'edgegroup-to-endpoint',
         };
       })
     )

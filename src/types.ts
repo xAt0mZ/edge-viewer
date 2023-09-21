@@ -1,5 +1,17 @@
-export type NodeType = 'endpoint' | 'container' | 'schedule' | 'edgestack' | 'edgegroup';
-export type Node = { id: string; type: NodeType };
+export type NodeType =
+  | 'endpoint'
+  | 'container'
+  | 'schedule'
+  | 'edgestack'
+  | 'edgegroup';
+
+type GraphNode = {
+  graphId: string; // internal reference used by the graph lib to differenciate nodes
+};
+export type Node = GraphNode & {
+  name: string; // displayed in the graph
+  type: NodeType; // own type to color nodes by type
+};
 
 // JSON
 
@@ -13,9 +25,9 @@ export type Json = {
 
 // ENDPOINT
 
-type Endpoint = { Id: number };
+type Endpoint = { Id: number; Name: string };
 export type EndpointNode = Node & {
-  rawId: number;
+  id: number;
 };
 
 // CONTAINER
@@ -25,6 +37,7 @@ type Container = {
   Created: number; // timestamp
   Id: string;
   Image: string;
+  Names: string[];
   Labels: {
     [k: string]: string;
   };
@@ -35,8 +48,7 @@ type Snapshot = {
 };
 
 export type ContainerNode = Node & {
-  rawId: string;
-  name: string;
+  id: string;
   endpoint: number;
   schedule: string;
   edgeStack: number;
@@ -55,7 +67,7 @@ type Schedule = {
   type: number;
 };
 export type ScheduleNode = Node & {
-  rawId: number;
+  id: number;
   edgeGroupIds: number[];
 };
 
@@ -68,10 +80,9 @@ type EdgeStack = {
   Name: string;
 };
 export type EdgeStackNode = Node & {
-  rawId: number;
+  id: number;
   schedule: number;
   edgeGroups: number[];
-  name: string;
 };
 
 // EDGE GROUP
@@ -84,8 +95,7 @@ type EdgeGroup = {
   TagIds: number[];
 };
 export type EdgeGroupNode = Node & {
-  rawId: number;
+  id: number;
   endpoints: number[];
-  name: string;
   tags: number[];
 };
