@@ -48,7 +48,7 @@ export function App() {
         ...edgeStacks,
         ...edgeGroups,
         ...endpointGroups,
-        ...tags
+        ...tags,
       ],
       links: generateLinks(
         {
@@ -58,7 +58,7 @@ export function App() {
           edgeStacks,
           edgeGroups,
           endpointGroups,
-          tags
+          tags,
         },
         linksConfig
       ),
@@ -88,7 +88,12 @@ export function App() {
           height={height}
           graphData={data}
           nodeId='graphId'
-          nodeLabel='graphId'
+          nodeLabel={(n: Node) => (
+            `<div style="display: flex; flex-direction: column;">
+              <span>${n.graphId.slice(0,30)}</span>
+              <span>${n.name}</span>
+            </div>`
+          )}
           nodeAutoColorBy='type'
           linkAutoColorBy='type'
           linkOpacity={0.8} // 3D specific
