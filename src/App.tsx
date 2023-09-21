@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ForceGraph2D, ForceGraph3D } from 'react-force-graph';
+import SpriteText from 'three-spritetext';
 
-import { Json, Link, Node } from './types';
+import { Json, Link, Node, Nodes } from './types';
 import { generateLinks } from './utils/generateLinks';
 import { Upload } from './components/Upload';
 import { getContainersNodes } from './getters/containers';
@@ -26,12 +27,12 @@ export function App() {
 
   const [json, setJson] = useState<Json | undefined>(undefined);
   const [data, setData] = useState<GraphData>(undefined);
+  const [nodes, setNodes] = useState<Nodes | undefined>(undefined);
 
-  const render = useCallback(() => {
+  useEffect(() => {
     if (!json) {
       return;
     }
-
     const endpoints = getEndpointsNodes(json);
     const containers = getContainersNodes(json, endpoints);
     const schedules = getScheduleNodes(json);
@@ -50,22 +51,31 @@ export function App() {
         ...endpointGroups,
         ...tags,
       ],
-      links: generateLinks(
-        {
-          endpoints,
-          containers,
-          schedules,
-          edgeStacks,
-          edgeGroups,
-          endpointGroups,
-          tags,
-        },
-        linksConfig
-      ),
+      links: [],
     };
 
     setData(data);
-  }, [json, linksConfig]);
+    setNodes({
+      endpoints,
+      containers,
+      schedules,
+      edgeStacks,
+      edgeGroups,
+      endpointGroups,
+      tags,
+    });
+  }, [json]);
+
+  const render = useCallback(() => {
+    if (!json || !nodes || !data) {
+      return;
+    }
+
+    const links = generateLinks(nodes, linksConfig);
+    setData({ ...data, links });
+  }, [json, nodes, data, linksConfig]);
+
+  // useEffect(() => {}, [linksConfig]);
 
   const Component = options.use3d
     ? ForceGraph3D<Node, Link>
@@ -74,34 +84,46 @@ export function App() {
   return (
     <div className='relative bg-black h-screen w-screen'>
       <div className='absolute top-2.5 left-2.5 bg-white z-50 rounded p-2'>
-        <Options
+        <OptionsPanel
           data={data}
           json={json}
           render={render}
           setData={setData}
           setJson={setJson}
         />
+        <LinkOptionsPanel />
       </div>
-      {data && (
+      {data && data.links.length && (
         <Component
           width={width}
           height={height}
           graphData={data}
           nodeId='graphId'
-          nodeLabel={(n: Node) => (
+          nodeLabel={(n: Node) =>
             `<div style="display: flex; flex-direction: column;">
-              <span>${n.graphId.slice(0,30)}</span>
+              <span>${n.graphId.slice(0, 30)}</span>
               <span>${n.name}</span>
             </div>`
-          )}
+          }
           nodeAutoColorBy='type'
+          nodeThreeObject={
+            !(options.showNames && options.use3d)
+              ? undefined
+              : (node: { name: string; color: string }) => {
+                  const sprite = new SpriteText(node.name);
+                  sprite.color = node.color;
+                  sprite.textHeight = 8;
+                  return sprite;
+                }
+          }
           linkAutoColorBy='type'
           linkOpacity={0.8} // 3D specific
-          // linkDirectionalParticles='value'
-          // linkDirectionalParticleSpeed={(l: Link) => l.value * 0.001}
+          linkDirectionalParticles='value'
+          linkDirectionalParticleSpeed={(l: Link) => l.value * 0.001}
           linkDirectionalArrowLength={3.5}
           linkDirectionalArrowRelPos={1}
           linkCurvature={0}
+          nodeRelSize={!options.use3d && options.showNames ? 1 : undefined}
           nodeCanvasObject={
             options.use3d || !options.showNames
               ? undefined
@@ -157,14 +179,20 @@ export function App() {
   );
 }
 
-type OptionsProps = {
+type OptionsPanelProps = {
   json?: Json;
   setJson(v: Json): void;
   data: GraphData;
   setData(v: GraphData): void;
   render(): void;
 };
-function Options({ json, setJson, data, setData, render }: OptionsProps) {
+function OptionsPanel({
+  json,
+  setJson,
+  data,
+  setData,
+  render,
+}: OptionsPanelProps) {
   const { options, setOptions } = useOptions();
 
   return (
@@ -184,7 +212,7 @@ function Options({ json, setJson, data, setData, render }: OptionsProps) {
       <button
         disabled={!json || !data}
         className='rounded border border-black px-2 disabled:opacity-50'
-        onClick={() => setData(undefined)}
+        onClick={() => setData({ nodes: data?.nodes || [], links: [] })}
       >
         Reset
       </button>
@@ -205,6 +233,28 @@ function Options({ json, setJson, data, setData, render }: OptionsProps) {
           onChange={() => setOptions({ showNames: !options.showNames })}
           id='display-names'
         />
+      </div>
+    </div>
+  );
+}
+
+function LinkOptionsPanel() {
+  const { linksConfig, setLinksConfig } = useLinksConfig();
+  return (
+    <div className='mt-2'>
+      <span className='font-bold'>Relations</span>
+      <div className='flex flex-col'>
+        {Object.entries(linksConfig).map(([linkName, enabled], key) => (
+          <div className='flex flex-row gap-2' key={key}>
+            <input
+              type='checkbox'
+              id={linkName}
+              checked={enabled}
+              onChange={() => setLinksConfig({ [linkName]: !enabled })}
+            />
+            <label htmlFor={linkName}>{linkName.replace('-to-', ' -> ')}</label>
+          </div>
+        ))}
       </div>
     </div>
   );
