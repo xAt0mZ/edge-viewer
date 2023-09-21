@@ -3,9 +3,10 @@ import { ChangeEvent } from 'react';
 type Props = {
   id: string;
   onChange: (input: string) => void;
+  className?: string;
 };
 
-export function Upload({ onChange, id }: Props) {
+export function Upload({ onChange, id, className }: Props) {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const fileReader = new FileReader();
@@ -18,8 +19,11 @@ export function Upload({ onChange, id }: Props) {
     }
   };
   return (
-    <div className='relative'>
-      <input type='file' id={id} onChange={(e) => handleChange(e)} />
-    </div>
+    <input
+      className={className}
+      type='file'
+      id={id}
+      onChange={(e) => handleChange(e)}
+    />
   );
 }

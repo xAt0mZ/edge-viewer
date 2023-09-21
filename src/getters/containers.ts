@@ -1,6 +1,6 @@
-import { compact } from 'lodash';
-import { ContainerNode, EndpointNode, Json } from './types';
-import { graphId } from './graphId';
+import { compact, parseInt } from 'lodash';
+import { ContainerNode, EndpointNode, Json } from '../types';
+import { graphId } from '../utils/graphId';
 
 export function getContainersNodes(
   json: Json,
@@ -20,6 +20,11 @@ export function getContainersNodes(
           endpoint: snap.EndpointId,
           name: Command,
           schedule: Labels['io.portainer.update.scheduleId'],
+          edgeStack: parseInt(
+            Labels['com.docker.compose.project.working_dir']?.split(
+              '/edge_stacks/'
+            )[2] || '-1'
+          ),
         })
       );
     })
