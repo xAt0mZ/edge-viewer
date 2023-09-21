@@ -12,6 +12,8 @@ import { getEdgeGroupsNodes } from './getters/edgeGroups';
 import { useWindowSize } from '@react-hook/window-size';
 import { useOptions } from './hooks/useOptions';
 import { useLinksConfig } from './hooks/useLinks';
+import { getEndpointGroupsNodes } from './getters/endpointGroups';
+import { getTagsNodes } from './getters/tags';
 
 type GraphData =
   | Parameters<typeof ForceGraph2D<Node, Link>>['0']['graphData']
@@ -35,6 +37,8 @@ export function App() {
     const schedules = getScheduleNodes(json);
     const edgeStacks = getEdgeStacksNodes(json);
     const edgeGroups = getEdgeGroupsNodes(json);
+    const endpointGroups = getEndpointGroupsNodes(json);
+    const tags = getTagsNodes(json);
 
     const data: GraphData = {
       nodes: [
@@ -43,6 +47,8 @@ export function App() {
         ...schedules,
         ...edgeStacks,
         ...edgeGroups,
+        ...endpointGroups,
+        ...tags
       ],
       links: generateLinks(
         {
@@ -51,6 +57,8 @@ export function App() {
           schedules,
           edgeStacks,
           edgeGroups,
+          endpointGroups,
+          tags
         },
         linksConfig
       ),

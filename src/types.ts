@@ -3,7 +3,9 @@ export type NodeType =
   | 'container'
   | 'schedule'
   | 'edgestack'
-  | 'edgegroup';
+  | 'edgegroup'
+  | 'endpointgroup'
+  | 'tag';
 
 type GraphNode = {
   graphId: string; // internal reference used by the graph lib to differenciate nodes
@@ -19,7 +21,11 @@ export type LinkType =
   | 'schedule-to-edgegroup'
   | 'schedule-to-edgestack'
   | 'edgestack-to-edgegroup'
-  | 'edgegroup-to-endpoint';
+  | 'edgegroup-to-endpoint'
+  | 'edgegroup-to-tag'
+  | 'tag-to-endpoint'
+  | 'tag-to-endpointgroup'
+  | 'endpointgroup-to-endpoint';
 
 export type LinksConfig = {
   [v in LinkType]: boolean;
@@ -38,23 +44,34 @@ export type Nodes = {
   schedules: ScheduleNode[];
   edgeStacks: EdgeStackNode[];
   edgeGroups: EdgeGroupNode[];
+  endpointGroups: EndpointGroupNode[];
+  tags: TagNode[];
 };
 
 // JSON
 
 export type Json = {
   endpoints: Endpoint[];
+  endpoint_groups: EndpointGroup[];
   snapshots: Snapshot[];
   edge_update_schedule: Schedule[];
   edge_stack: EdgeStack[];
   edgegroups: EdgeGroup[];
+  tags: Tag[];
 };
 
 // ENDPOINT
 
-type Endpoint = { Id: number; Name: string };
+type Endpoint = {
+  Id: number;
+  Name: string;
+  TagIds: number[];
+  GroupId: number;
+};
 export type EndpointNode = Node & {
   id: number;
+  tags: number[];
+  endpointGroup: number;
 };
 
 // CONTAINER
@@ -119,10 +136,42 @@ type EdgeGroup = {
   Endpoints: number[];
   Id: number;
   Name: string;
-  TagIds: number[];
+  TagIds: number[] | null;
 };
 export type EdgeGroupNode = Node & {
   id: number;
   endpoints: number[];
+  tags: number[] | null;
+};
+
+// TAGS
+
+type Tag = {
+  EndpointGroups: {
+    [id: number]: true;
+  };
+  Endpoints: {
+    [id: number]: true;
+  };
+  ID: number;
+  Name: string;
+};
+
+export type TagNode = Node & {
+  id: number;
+  endpoints: number[];
+  endpointGroups: number[];
+};
+
+// ENDPOINT GROUP
+
+type EndpointGroup = {
+  Id: number;
+  Name: string;
+  TagIds: number[];
+};
+
+export type EndpointGroupNode = Node & {
+  id: number;
   tags: number[];
 };

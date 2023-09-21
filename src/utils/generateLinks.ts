@@ -29,11 +29,15 @@ const linkFuncs: {
   [k in LinkType]: LinkerFunc;
 } = {
   'container-to-endpoint': containersToEndpoints,
-  'edgegroup-to-endpoint': edgeGroupsToEndpoints,
   'edgestack-to-edgegroup': edgeStacksToEdgeGroups,
   'schedule-to-container': schedulesToContainers,
   'schedule-to-edgegroup': schedulesToEdgeGroups,
   'schedule-to-edgestack': schedulesToEdgeStacks,
+  'edgegroup-to-endpoint': edgeGroupsToEndpoints,
+  'edgegroup-to-tag': edgeGroupsToTags,
+  'tag-to-endpoint': tagsToEndpoints,
+  'tag-to-endpointgroup': tagsToEndpointGroups,
+  'endpointgroup-to-endpoint': endpointGroupsToEndpoints,
 };
 
 export function generateLinks(nodes: Nodes, linksConfig: LinksConfig): Link[] {
@@ -63,6 +67,84 @@ function generate<S extends Node, T extends Node>(
           source: inverted ? target.graphId : source.graphId,
           target: inverted ? source.graphId : target.graphId,
           value: value,
+          type,
+        };
+      })
+    )
+  );
+}
+
+function edgeGroupsToTags({ edgeGroups, tags }: Nodes, type: LinkType): Link[] {
+  return compact(
+    edgeGroups.flatMap((group) =>
+      group.tags?.map((id): Link | undefined => {
+        const tag = tags.find((t) => t.id === id);
+        if (!tag) return;
+        return {
+          source: group.graphId,
+          target: tag.graphId,
+          value: 1,
+          type,
+        };
+      })
+    )
+  );
+}
+
+function tagsToEndpoints({ tags, endpoints }: Nodes, type: LinkType): Link[] {
+  return compact(
+    flattenDeep(
+      endpoints.map((e) =>
+        e.tags.map((id): Link | undefined => {
+          const tag = tags.find((t) => t.id === id);
+          if (!tag) return;
+          return {
+            source: tag.graphId,
+            target: e.graphId,
+            value: 1,
+            type,
+          };
+        })
+      )
+    )
+  );
+}
+
+function tagsToEndpointGroups(
+  { tags, endpointGroups }: Nodes,
+  type: LinkType
+): Link[] {
+  return compact(
+    flattenDeep(
+      endpointGroups.map((e) =>
+        e.tags.map((id): Link | undefined => {
+          const tag = tags.find((t) => t.id === id);
+          if (!tag) return;
+          return {
+            source: tag.graphId,
+            target: e.graphId,
+            value: 1,
+            type,
+          };
+        })
+      )
+    )
+  );
+}
+
+function endpointGroupsToEndpoints(
+  { endpointGroups, endpoints }: Nodes,
+  type: LinkType
+): Link[] {
+  return compact(
+    flattenDeep(
+      endpoints.map((e): Link | undefined => {
+        const group = endpointGroups.find((g) => g.id === e.endpointGroup);
+        if (!group) return;
+        return {
+          source: group.graphId,
+          target: e.graphId,
+          value: 1,
           type,
         };
       })

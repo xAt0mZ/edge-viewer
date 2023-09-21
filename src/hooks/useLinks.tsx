@@ -24,6 +24,10 @@ export function LinksProvider({ children }: PropsWithChildren) {
     'schedule-to-container': true,
     'schedule-to-edgestack': true,
     'schedule-to-edgegroup': true,
+    'edgegroup-to-tag': true,
+    'tag-to-endpoint': true,
+    'tag-to-endpointgroup': true,
+    'endpointgroup-to-endpoint': true,
   });
   return (
     <Context.Provider
