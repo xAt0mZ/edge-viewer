@@ -13,6 +13,33 @@ export type Node = GraphNode & {
   type: NodeType; // own type to color nodes by type
 };
 
+export type LinkType =
+  | 'container-to-endpoint'
+  | 'schedule-to-container'
+  | 'schedule-to-edgegroup'
+  | 'schedule-to-edgestack'
+  | 'edgestack-to-edgegroup'
+  | 'edgegroup-to-endpoint';
+
+export type LinksConfig = {
+  [v in LinkType]: boolean;
+};
+
+export type Link = {
+  source: string;
+  target: string;
+  value: number;
+  type: LinkType;
+};
+
+export type Nodes = {
+  endpoints: EndpointNode[];
+  containers: ContainerNode[];
+  schedules: ScheduleNode[];
+  edgeStacks: EdgeStackNode[];
+  edgeGroups: EdgeGroupNode[];
+};
+
 // JSON
 
 export type Json = {

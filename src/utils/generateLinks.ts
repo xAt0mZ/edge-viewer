@@ -1,100 +1,137 @@
-import { compact } from 'lodash';
-import {
-  ContainerNode,
-  EdgeGroupNode,
-  EdgeStackNode,
-  EndpointNode,
-  ScheduleNode,
-} from '../types';
-import { LinkType } from '../hooks/useLinks';
+import { compact, flattenDeep } from 'lodash';
+import { Link, LinkType, LinksConfig, Node, Nodes } from '../types';
 
-type Link = {
-  source: string;
-  target: string;
-  value: number;
-  type: LinkType;
+/*
+endpoint
+container
+schedule
+edgestack
+tag
+envgroup
+
+container -> endpoint
+
+schedule -> edgestack
+
+edgestack -> edgegroup
+
+edgegroup -> endpoint (static)
+
+edge group -> tag (dynamic)
+tag -> endpoint (level 1)
+tag -> envgroup (level 2.1)
+envgroup -> endpoint (level 2.2)
+
+*/
+
+type LinkerFunc = (nodes: Nodes, type: LinkType) => Link[];
+const linkFuncs: {
+  [k in LinkType]: LinkerFunc;
+} = {
+  'container-to-endpoint': containersToEndpoints,
+  'edgegroup-to-endpoint': edgeGroupsToEndpoints,
+  'edgestack-to-edgegroup': edgeStacksToEdgeGroups,
+  'schedule-to-container': schedulesToContainers,
+  'schedule-to-edgegroup': schedulesToEdgeGroups,
+  'schedule-to-edgestack': schedulesToEdgeStacks,
 };
 
-type GenerateProps = {
-  endpoints: EndpointNode[];
-  containers: ContainerNode[];
-  schedules: ScheduleNode[];
-  edgeStacks: EdgeStackNode[];
-  edgeGroups: EdgeGroupNode[];
-};
-export function generateLinks({
-  endpoints,
-  containers,
-  schedules,
-  edgeStacks,
-  edgeGroups,
-}: GenerateProps): Link[] {
-  return [
-    ...containersToEndpoints(containers, endpoints),
-    ...schedulesToContainers(schedules, containers),
-    ...schedulesToEdgeStacks(schedules, edgeStacks),
-    ...edgeStacksToEdgeGroups(edgeStacks, edgeGroups),
-    ...edgeGroupsToEndpoints(edgeGroups, endpoints),
-  ];
+export function generateLinks(nodes: Nodes, linksConfig: LinksConfig): Link[] {
+  return Object.entries(linkFuncs).flatMap(([type, func]) =>
+    linksConfig[type as LinkType] ? func(nodes, type as LinkType) : []
+  );
+}
+
+function generate<S extends Node, T extends Node>(
+  type: LinkType,
+  sources: S[],
+  targets: T[],
+  targetFinderFunc: (source: S, target: T) => boolean,
+  { value = 1, inverted = false }: { value?: number; inverted?: boolean } = {
+    value: 1,
+    inverted: false,
+  }
+): Link[] {
+  return compact(
+    flattenDeep(
+      sources.map((source): Link | undefined => {
+        const target = targets.find((target) =>
+          targetFinderFunc(source, target)
+        );
+        if (!target) return;
+        return {
+          source: inverted ? target.graphId : source.graphId,
+          target: inverted ? source.graphId : target.graphId,
+          value: value,
+          type,
+        };
+      })
+    )
+  );
 }
 
 function containersToEndpoints(
-  containers: ContainerNode[],
-  endpoints: EndpointNode[]
+  { containers, endpoints }: Nodes,
+  type: LinkType
 ) {
-  return compact<Link>(
-    containers.map((c) => {
-      const endpoint = endpoints.find((e) => e.id === c.endpoint);
-      if (!endpoint) return;
-      return {
-        source: c.graphId,
-        target: endpoint.graphId,
-        value: 1,
-        type: 'container-to-endpoint',
-      };
-    })
+  return generate(
+    type,
+    containers,
+    endpoints,
+    (container, endpoint) => container.endpoint === endpoint.id,
+    { value: 1 }
   );
 }
 
 function schedulesToContainers(
-  schedules: ScheduleNode[],
-  containers: ContainerNode[]
+  { schedules, containers }: Nodes,
+  type: LinkType
 ) {
-  return compact<Link>(
-    containers.map((c) => {
-      const schedule = schedules.find((s) => s.id.toString() === c.schedule);
-      if (!schedule) return;
-      return {
-        source: schedule.graphId,
-        target: c.graphId,
-        value: 1,
-        type: 'schedule-to-container',
-      };
-    })
+  return generate(
+    type,
+    containers,
+    schedules,
+    (container, schedule) => schedule.id.toString() === container.schedule,
+    { inverted: true }
   );
 }
 
 function schedulesToEdgeStacks(
-  schedules: ScheduleNode[],
-  edgeStacks: EdgeStackNode[]
+  { schedules, edgeStacks }: Nodes,
+  type: LinkType
+) {
+  return generate(
+    type,
+    edgeStacks,
+    schedules,
+    (stack, schedule) => stack.schedule === schedule.id,
+    { inverted: true }
+  );
+}
+
+function schedulesToEdgeGroups(
+  { schedules, edgeGroups }: Nodes,
+  type: LinkType
 ) {
   return compact<Link>(
-    edgeStacks.map((e): Link | undefined => {
-      const schedule = schedules.find((s) => s.id === e.schedule);
-      if (!schedule) return;
-      return {
-        source: schedule.graphId,
-        target: e.graphId,
-        type: 'schedule-to-edgestack',
-        value: 1,
-      };
-    })
+    schedules.flatMap((s) =>
+      s.edgeGroupIds.map((id): Link | undefined => {
+        const group = edgeGroups.find((g) => g.id === id);
+        if (!group) return;
+        return {
+          source: s.graphId,
+          target: group.graphId,
+          value: 1,
+          type,
+        };
+      })
+    )
   );
 }
 
 function edgeStacksToEdgeGroups(
-  edgeStacks: EdgeStackNode[],
-  edgeGroups: EdgeGroupNode[]
+  { edgeStacks, edgeGroups }: Nodes,
+  type: LinkType
 ) {
   return compact<Link>(
     edgeStacks.flatMap((s) =>
@@ -105,7 +142,7 @@ function edgeStacksToEdgeGroups(
           source: s.graphId,
           target: group.graphId,
           value: 1,
-          type: 'edgestack-to-edgegroup',
+          type,
         };
       })
     )
@@ -113,8 +150,8 @@ function edgeStacksToEdgeGroups(
 }
 
 function edgeGroupsToEndpoints(
-  edgeGroups: EdgeGroupNode[],
-  endpoints: EndpointNode[]
+  { edgeGroups, endpoints }: Nodes,
+  type: LinkType
 ) {
   return compact<Link>(
     edgeGroups.flatMap((g) =>
@@ -125,7 +162,7 @@ function edgeGroupsToEndpoints(
           source: g.graphId,
           target: endpoint.graphId,
           value: 1,
-          type: 'edgegroup-to-endpoint',
+          type,
         };
       })
     )

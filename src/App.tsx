@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ForceGraph2D, ForceGraph3D } from 'react-force-graph';
 
-import { Json } from './types';
+import { Json, Link, Node } from './types';
 import { generateLinks } from './utils/generateLinks';
 import { Upload } from './components/Upload';
 import { getContainersNodes } from './getters/containers';
@@ -11,12 +11,16 @@ import { getEdgeStacksNodes } from './getters/edgeStacks';
 import { getEdgeGroupsNodes } from './getters/edgeGroups';
 import { useWindowSize } from '@react-hook/window-size';
 import { useOptions } from './hooks/useOptions';
+import { useLinksConfig } from './hooks/useLinks';
 
-type GraphData = Parameters<typeof ForceGraph2D>['0']['graphData'];
+type GraphData =
+  | Parameters<typeof ForceGraph2D<Node, Link>>['0']['graphData']
+  | Parameters<typeof ForceGraph3D<Node, Link>>['0']['graphData'];
 
 export function App() {
   const [width, height] = useWindowSize();
   const { options } = useOptions();
+  const { linksConfig } = useLinksConfig();
 
   const [json, setJson] = useState<Json | undefined>(undefined);
   const [data, setData] = useState<GraphData>(undefined);
@@ -40,19 +44,24 @@ export function App() {
         ...edgeStacks,
         ...edgeGroups,
       ],
-      links: generateLinks({
-        endpoints,
-        containers,
-        schedules,
-        edgeStacks,
-        edgeGroups,
-      }),
+      links: generateLinks(
+        {
+          endpoints,
+          containers,
+          schedules,
+          edgeStacks,
+          edgeGroups,
+        },
+        linksConfig
+      ),
     };
 
     setData(data);
-  }, [json]);
+  }, [json, linksConfig]);
 
-  const Component = options.use3d ? ForceGraph3D : ForceGraph2D;
+  const Component = options.use3d
+    ? ForceGraph3D<Node, Link>
+    : ForceGraph2D<Node, Link>;
 
   return (
     <div className='relative bg-black h-screen w-screen'>
@@ -74,21 +83,38 @@ export function App() {
           nodeLabel='graphId'
           nodeAutoColorBy='type'
           linkAutoColorBy='type'
-          linkDirectionalParticles='value'
-          linkDirectionalParticleSpeed={0.001}
+          linkOpacity={0.8} // 3D specific
+          // linkDirectionalParticles='value'
+          // linkDirectionalParticleSpeed={(l: Link) => l.value * 0.001}
+          linkDirectionalArrowLength={3.5}
+          linkDirectionalArrowRelPos={1}
+          linkCurvature={0}
           nodeCanvasObject={
-            !options.showNames
+            options.use3d || !options.showNames
               ? undefined
               : (node, ctx, globalScale) => {
                   const label = node.name as string;
-                  const fontSize = 12 / globalScale;
-                  ctx.font = `${fontSize}px`;
+                  const fontSize = 20 / globalScale;
+                  ctx.font = `${fontSize}px Sans-serif`;
                   const textWidth = ctx.measureText(label).width;
-                  const bckgDimensions: [number, number] = [
-                    textWidth + fontSize * 0.2,
-                    fontSize + fontSize * 0.2,
-                  ]; // some padding
-
+                  const bckgDimensions = [textWidth, fontSize].map(
+                    (n) => n + fontSize * 0.2
+                  ); // some padding
+                  ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                  ctx.lineWidth = 1 / globalScale;
+                  ctx.strokeRect(
+                    node.x! - bckgDimensions[0] / 2,
+                    node.y! - bckgDimensions[1] / 2,
+                    bckgDimensions[0],
+                    bckgDimensions[1]
+                  );
+                  ctx.fillStyle = '#000000';
+                  ctx.fillRect(
+                    node.x! - bckgDimensions[0] / 2,
+                    node.y! - bckgDimensions[1] / 2,
+                    bckgDimensions[0],
+                    bckgDimensions[1]
+                  );
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
                   ctx.fillStyle = node.color;
@@ -98,7 +124,7 @@ export function App() {
                 }
           }
           nodePointerAreaPaint={
-            !options.showNames
+            options.use3d || !options.showNames
               ? undefined
               : (node, color, ctx) => {
                   ctx.fillStyle = color;
@@ -156,7 +182,6 @@ function Options({ json, setJson, data, setData, render }: OptionsProps) {
           checked={options.use3d}
           onChange={() => setOptions({ use3d: !options.use3d })}
           id='3d'
-          disabled
         />
       </div>
       <div className='flex gap-2'>
