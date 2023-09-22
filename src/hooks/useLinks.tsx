@@ -1,5 +1,5 @@
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
-import { LinksConfig } from '../types';
+import { LinksConfig } from '../types/link';
 
 type LinksContext = {
   linksConfig: LinksConfig;

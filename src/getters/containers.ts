@@ -1,6 +1,8 @@
 import { compact, parseInt } from 'lodash';
-import { ContainerNode, EndpointNode, Json } from '../types';
+
 import { graphId } from '../utils/graphId';
+import { Json } from '../types/json';
+import { ContainerNode, EndpointNode } from '../types/node';
 
 export function getContainersNodes(
   json: Json,
@@ -15,6 +17,7 @@ export function getContainersNodes(
       return snap.Docker.DockerSnapshotRaw.Containers.map(
         ({ Id, Labels, Names }): ContainerNode => ({
           graphId: graphId('container', Id),
+          visible: true,
           type: 'container',
           name: Names[0].slice(1),
           id: Id,

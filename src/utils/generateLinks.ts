@@ -1,5 +1,6 @@
 import { compact, flattenDeep } from 'lodash';
-import { Link, LinkType, LinksConfig, Node, Nodes } from '../types';
+import { GraphNode, Nodes } from '../types/node';
+import { GraphLink, LinkType, LinksConfig } from '../types/link';
 
 /*
 endpoint
@@ -24,7 +25,7 @@ envgroup -> endpoint (level 2.2)
 
 */
 
-type LinkerFunc = (nodes: Nodes, type: LinkType) => Link[];
+type LinkerFunc = (nodes: Nodes, type: LinkType) => GraphLink[];
 const linkFuncs: {
   [k in LinkType]: LinkerFunc;
 } = {
@@ -40,25 +41,25 @@ const linkFuncs: {
   'endpointgroup-to-endpoint': endpointGroupsToEndpoints,
 };
 
-export function generateLinks(nodes: Nodes, linksConfig: LinksConfig): Link[] {
+export function generateLinks(
+  nodes: Nodes,
+  linksConfig: LinksConfig
+): GraphLink[] {
   return Object.entries(linkFuncs).flatMap(([type, func]) =>
     linksConfig[type as LinkType] ? func(nodes, type as LinkType) : []
   );
 }
 
-function generate<S extends Node, T extends Node>(
+function generate<S extends GraphNode, T extends GraphNode>(
   type: LinkType,
   sources: S[],
   targets: T[],
   targetFinderFunc: (source: S, target: T) => boolean,
-  { value = 1, inverted = false }: { value?: number; inverted?: boolean } = {
-    value: 1,
-    inverted: false,
-  }
-): Link[] {
+  inverted = false
+): GraphLink[] {
   return compact(
     flattenDeep(
-      sources.map((source): Link | undefined => {
+      sources.map((source): GraphLink | undefined => {
         const target = targets.find((target) =>
           targetFinderFunc(source, target)
         );
@@ -66,7 +67,8 @@ function generate<S extends Node, T extends Node>(
         return {
           source: inverted ? target.graphId : source.graphId,
           target: inverted ? source.graphId : target.graphId,
-          value: value,
+          dots: 1,
+          visible: true,
           type,
         };
       })
@@ -74,16 +76,20 @@ function generate<S extends Node, T extends Node>(
   );
 }
 
-function edgeGroupsToTags({ edgeGroups, tags }: Nodes, type: LinkType): Link[] {
+function edgeGroupsToTags(
+  { edgeGroups, tags }: Nodes,
+  type: LinkType
+): GraphLink[] {
   return compact(
     edgeGroups.flatMap((group) =>
-      group.tags?.map((id): Link | undefined => {
+      group.tags?.map((id): GraphLink | undefined => {
         const tag = tags.find((t) => t.id === id);
         if (!tag) return;
         return {
           source: group.graphId,
           target: tag.graphId,
-          value: 1,
+          dots: 1,
+          visible: true,
           type,
         };
       })
@@ -91,17 +97,21 @@ function edgeGroupsToTags({ edgeGroups, tags }: Nodes, type: LinkType): Link[] {
   );
 }
 
-function tagsToEndpoints({ tags, endpoints }: Nodes, type: LinkType): Link[] {
+function tagsToEndpoints(
+  { tags, endpoints }: Nodes,
+  type: LinkType
+): GraphLink[] {
   return compact(
     flattenDeep(
       endpoints.map((e) =>
-        e.tags.map((id): Link | undefined => {
+        e.tags.map((id): GraphLink | undefined => {
           const tag = tags.find((t) => t.id === id);
           if (!tag) return;
           return {
             source: tag.graphId,
             target: e.graphId,
-            value: 1,
+            dots: 1,
+            visible: true,
             type,
           };
         })
@@ -113,17 +123,18 @@ function tagsToEndpoints({ tags, endpoints }: Nodes, type: LinkType): Link[] {
 function tagsToEndpointGroups(
   { tags, endpointGroups }: Nodes,
   type: LinkType
-): Link[] {
+): GraphLink[] {
   return compact(
     flattenDeep(
       endpointGroups.map((e) =>
-        e.tags.map((id): Link | undefined => {
+        e.tags.map((id): GraphLink | undefined => {
           const tag = tags.find((t) => t.id === id);
           if (!tag) return;
           return {
             source: tag.graphId,
             target: e.graphId,
-            value: 1,
+            dots: 1,
+            visible: true,
             type,
           };
         })
@@ -135,16 +146,17 @@ function tagsToEndpointGroups(
 function endpointGroupsToEndpoints(
   { endpointGroups, endpoints }: Nodes,
   type: LinkType
-): Link[] {
+): GraphLink[] {
   return compact(
     flattenDeep(
-      endpoints.map((e): Link | undefined => {
+      endpoints.map((e): GraphLink | undefined => {
         const group = endpointGroups.find((g) => g.id === e.endpointGroup);
         if (!group) return;
         return {
           source: group.graphId,
           target: e.graphId,
-          value: 1,
+          dots: 1,
+          visible: true,
           type,
         };
       })
@@ -160,8 +172,7 @@ function containersToEndpoints(
     type,
     containers,
     endpoints,
-    (container, endpoint) => container.endpoint === endpoint.id,
-    { value: 1 }
+    (container, endpoint) => container.endpoint === endpoint.id
   );
 }
 
@@ -174,7 +185,7 @@ function schedulesToContainers(
     containers,
     schedules,
     (container, schedule) => schedule.id.toString() === container.schedule,
-    { inverted: true }
+    true
   );
 }
 
@@ -187,7 +198,7 @@ function schedulesToEdgeStacks(
     edgeStacks,
     schedules,
     (stack, schedule) => stack.schedule === schedule.id,
-    { inverted: true }
+    true
   );
 }
 
@@ -195,15 +206,16 @@ function schedulesToEdgeGroups(
   { schedules, edgeGroups }: Nodes,
   type: LinkType
 ) {
-  return compact<Link>(
+  return compact<GraphLink>(
     schedules.flatMap((s) =>
-      s.edgeGroupIds.map((id): Link | undefined => {
+      s.edgeGroupIds.map((id): GraphLink | undefined => {
         const group = edgeGroups.find((g) => g.id === id);
         if (!group) return;
         return {
           source: s.graphId,
           target: group.graphId,
-          value: 1,
+          dots: 1,
+          visible: true,
           type,
         };
       })
@@ -215,15 +227,16 @@ function edgeStacksToEdgeGroups(
   { edgeStacks, edgeGroups }: Nodes,
   type: LinkType
 ) {
-  return compact<Link>(
+  return compact<GraphLink>(
     edgeStacks.flatMap((s) =>
-      s.edgeGroups.map((e): Link | undefined => {
+      s.edgeGroups.map((e): GraphLink | undefined => {
         const group = edgeGroups.find((g) => g.id === e);
         if (!group) return;
         return {
           source: s.graphId,
           target: group.graphId,
-          value: 1,
+          dots: 1,
+          visible: true,
           type,
         };
       })
@@ -235,15 +248,16 @@ function edgeGroupsToEndpoints(
   { edgeGroups, endpoints }: Nodes,
   type: LinkType
 ) {
-  return compact<Link>(
+  return compact<GraphLink>(
     edgeGroups.flatMap((g) =>
-      g.endpoints.map((e): Link | undefined => {
+      g.endpoints.map((e): GraphLink | undefined => {
         const endpoint = endpoints.find((i) => i.id === e);
         if (!endpoint) return;
         return {
           source: g.graphId,
           target: endpoint.graphId,
-          value: 1,
+          dots: 1,
+          visible: true,
           type,
         };
       })
