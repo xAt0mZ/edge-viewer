@@ -26,6 +26,7 @@ export type LinkType =
   | 'tag-to-endpoint'
   | 'tag-to-endpointgroup'
   | 'endpointgroup-to-endpoint';
+  // edgestack-to-container
 
 export type LinksConfig = {
   [v in LinkType]: boolean;
