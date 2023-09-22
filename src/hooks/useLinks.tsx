@@ -1,5 +1,5 @@
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
-import { LinksConfig } from '../types/link';
+import { LinkType, LinksConfig } from '../types/link';
 
 type LinksContext = {
   linksConfig: LinksConfig;
@@ -18,16 +18,17 @@ export function useLinksConfig() {
 
 export function LinksProvider({ children }: PropsWithChildren) {
   const [linksConfig, setLinksConfig] = useState<LinksConfig>({
-    'container-to-endpoint': true,
-    'edgegroup-to-endpoint': true,
-    'edgestack-to-edgegroup': true,
-    'schedule-to-container': true,
-    'schedule-to-edgestack': true,
-    'schedule-to-edgegroup': true,
-    'edgegroup-to-tag': true,
-    'tag-to-endpoint': true,
-    'tag-to-endpointgroup': true,
-    'endpointgroup-to-endpoint': true,
+    [LinkType.SCHEDULE_TO_EDGEGROUP]: true,
+    [LinkType.SCHEDULE_TO_EDGESTACK]: true,
+    [LinkType.EDGESTACK_TO_EDGEGROUP]: true,
+    [LinkType.EDGEGROUP_TO_ENDPOINT]: true,
+    [LinkType.EDGEGROUP_TO_TAG]: true,
+    [LinkType.TAG_TO_ENDPOINT]: true,
+    [LinkType.TAG_TO_ENDPOINTGROUP]: true,
+    [LinkType.ENDPOINTGROUP_TO_ENDPOINT]: true,
+    [LinkType.SCHEDULE_TO_CONTAINER]: true,
+    [LinkType.EDGESTACK_TO_CONTAINER]: true,
+    [LinkType.CONTAINER_TO_ENDPOINT]: true,
   });
   return (
     <Context.Provider

@@ -29,16 +29,17 @@ type LinkerFunc = (nodes: Nodes, type: LinkType) => GraphLink[];
 const linkFuncs: {
   [k in LinkType]: LinkerFunc;
 } = {
-  'container-to-endpoint': containersToEndpoints,
-  'edgestack-to-edgegroup': edgeStacksToEdgeGroups,
-  'schedule-to-container': schedulesToContainers,
-  'schedule-to-edgegroup': schedulesToEdgeGroups,
-  'schedule-to-edgestack': schedulesToEdgeStacks,
-  'edgegroup-to-endpoint': edgeGroupsToEndpoints,
-  'edgegroup-to-tag': edgeGroupsToTags,
-  'tag-to-endpoint': tagsToEndpoints,
-  'tag-to-endpointgroup': tagsToEndpointGroups,
-  'endpointgroup-to-endpoint': endpointGroupsToEndpoints,
+  [LinkType.CONTAINER_TO_ENDPOINT]: containersToEndpoints,
+  [LinkType.EDGESTACK_TO_EDGEGROUP]: edgeStacksToEdgeGroups,
+  [LinkType.SCHEDULE_TO_CONTAINER]: schedulesToContainers,
+  [LinkType.SCHEDULE_TO_EDGEGROUP]: schedulesToEdgeGroups,
+  [LinkType.SCHEDULE_TO_EDGESTACK]: schedulesToEdgeStacks,
+  [LinkType.EDGEGROUP_TO_ENDPOINT]: edgeGroupsToEndpoints,
+  [LinkType.EDGEGROUP_TO_TAG]: edgeGroupsToTags,
+  [LinkType.TAG_TO_ENDPOINT]: tagsToEndpoints,
+  [LinkType.TAG_TO_ENDPOINTGROUP]: tagsToEndpointGroups,
+  [LinkType.ENDPOINTGROUP_TO_ENDPOINT]: endpointGroupsToEndpoints,
+  [LinkType.EDGESTACK_TO_CONTAINER]: edgeStacksToContainers,
 };
 
 export function generateLinks(
@@ -241,6 +242,19 @@ function edgeStacksToEdgeGroups(
         };
       })
     )
+  );
+}
+
+function edgeStacksToContainers(
+  { edgeStacks, containers }: Nodes,
+  type: LinkType
+) {
+  return generate(
+    type,
+    containers,
+    edgeStacks,
+    (c, e) => c.edgeStack === e.id,
+    true
   );
 }
 

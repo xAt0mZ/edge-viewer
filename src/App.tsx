@@ -16,6 +16,11 @@ import { Nodes } from './types/node';
 // import { GraphLink } from './types/link';
 import { Json } from './types/json';
 import { Graph, GraphData } from './Graph';
+import { Tooltip } from 'react-tooltip';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { LinkType, LinskNotes } from './types/link';
+import { Collapsible } from './components/Collapsible';
+import { Switch } from './components/Switch';
 
 export function App() {
   const { linksConfig } = useLinksConfig();
@@ -74,15 +79,19 @@ export function App() {
 
   return (
     <div className='relative bg-black h-screen w-screen'>
-      <div className='absolute top-2.5 left-2.5 bg-white z-50 rounded p-2'>
-        <OptionsPanel
-          data={data}
-          json={json}
-          render={render}
-          setData={setData}
-          setJson={setJson}
-        />
-        <LinkOptionsPanel />
+      <div className='absolute top-2.5 left-2.5 bg-white z-50 rounded p-2 flex flex-col gap-2'>
+        <Collapsible trigger='Options' open>
+          <OptionsPanel
+            data={data}
+            json={json}
+            render={render}
+            setData={setData}
+            setJson={setJson}
+          />
+        </Collapsible>
+        <Collapsible trigger='Relations'>
+          <LinkOptionsPanel />
+        </Collapsible>
       </div>
       {data && data.links.length && <Graph graphData={data} />}
     </div>
@@ -126,24 +135,16 @@ function OptionsPanel({
       >
         Reset
       </button>
-      <div className='flex gap-2'>
-        <label htmlFor='3d'>Enable 3D</label>
-        <input
-          type='checkbox'
-          checked={options.use3d}
-          onChange={() => setOptions({ use3d: !options.use3d })}
-          id='3d'
-        />
-      </div>
-      <div className='flex gap-2'>
-        <label htmlFor='display-names'>Show names</label>
-        <input
-          type='checkbox'
-          checked={options.showNames}
-          onChange={() => setOptions({ showNames: !options.showNames })}
-          id='display-names'
-        />
-      </div>
+      <Switch
+        label='Enable 3D'
+        enabled={options.use3d}
+        onChange={() => setOptions({ use3d: !options.use3d })}
+      />
+      <Switch
+        label='Show names'
+        enabled={options.showNames}
+        onChange={() => setOptions({ showNames: !options.showNames })}
+      />
     </div>
   );
 }
@@ -151,21 +152,23 @@ function OptionsPanel({
 function LinkOptionsPanel() {
   const { linksConfig, setLinksConfig } = useLinksConfig();
   return (
-    <div className='mt-2'>
-      <span className='font-bold'>Relations</span>
-      <div className='flex flex-col'>
-        {Object.entries(linksConfig).map(([linkName, enabled], key) => (
-          <div className='flex flex-row gap-2' key={key}>
-            <input
-              type='checkbox'
-              id={linkName}
-              checked={enabled}
-              onChange={() => setLinksConfig({ [linkName]: !enabled })}
-            />
-            <label htmlFor={linkName}>{linkName.replace('-to-', ' -> ')}</label>
-          </div>
-        ))}
-      </div>
+    <div className='flex flex-col gap-2'>
+      {Object.entries(linksConfig).map(([linkName, enabled], key) => (
+        <div className='flex flex-row gap-2 items-center' key={key}>
+          <QuestionMarkCircleIcon
+            className='h-6'
+            data-tooltip-id='note-tooltip'
+            data-tooltip-content={LinskNotes[linkName as LinkType]}
+            data-tooltip-place='right'
+          />
+          <Switch
+            enabled={enabled}
+            onChange={() => setLinksConfig({ [linkName]: !enabled })}
+          />
+          <span>{linkName.replace('-to-', ' -> ')}</span>
+        </div>
+      ))}
+      <Tooltip id='note-tooltip' />
     </div>
   );
 }

@@ -26,7 +26,7 @@ export function getContainersNodes(
           edgeStack: parseInt(
             Labels['com.docker.compose.project.working_dir']?.split(
               '/edge_stacks/'
-            )[2] || '-1'
+            )[1] || '-1'
           ),
         })
       );
