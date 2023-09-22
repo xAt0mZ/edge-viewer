@@ -27,7 +27,13 @@ type CommonProps2D = Pick<Props2D, CommonKeys>;
 type CommonProps3D = Pick<Props3D, CommonKeys>;
 type CommonProps = CommonProps2D | CommonProps3D;
 
-type Props = { graphData: GraphData };
+type NodeClickActions =
+  | Pick<Props2D, 'onNodeClick' | 'onNodeRightClick'>
+  | Pick<Props3D, 'onNodeClick' | 'onNodeRightClick'>;
+
+type Props = NodeClickActions & {
+  graphData: GraphData;
+};
 export function Graph({ graphData }: Props) {
   const { options } = useOptions();
   const [width, height] = useWindowSize();

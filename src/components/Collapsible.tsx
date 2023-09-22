@@ -14,8 +14,8 @@ export function Collapsible({
     <ReactCollapsible
       trigger={trigger}
       open={open}
-      triggerClassName='relative block w-full pb-1 after:content-[">"] after:absolute after:right-0 after:rotate-90'
-      triggerOpenedClassName='relative block w-full pb-1 after:content-["<"] after:absolute after:right-0 after:rotate-90'
+      triggerClassName='font-bold relative block w-full pb-1 after:content-[">"] after:absolute after:right-0 after:rotate-90'
+      triggerOpenedClassName='font-bold relative block w-full pb-1 after:content-["<"] after:absolute after:right-0 after:rotate-90'
     >
       {children}
     </ReactCollapsible>

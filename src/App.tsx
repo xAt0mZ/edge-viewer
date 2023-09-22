@@ -1,26 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Tooltip } from 'react-tooltip';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 import { generateLinks } from './utils/generateLinks';
 import { Upload } from './components/Upload';
-import { getContainersNodes } from './getters/containers';
-import { getScheduleNodes } from './getters/schedules';
-import { getEndpointsNodes } from './getters/endpoints';
-import { getEdgeStacksNodes } from './getters/edgeStacks';
-import { getEdgeGroupsNodes } from './getters/edgeGroups';
-
 import { useOptions } from './hooks/useOptions';
 import { useLinksConfig } from './hooks/useLinks';
-import { getEndpointGroupsNodes } from './getters/endpointGroups';
-import { getTagsNodes } from './getters/tags';
-import { Nodes } from './types/node';
+import { GraphNode, Nodes } from './types/node';
 // import { GraphLink } from './types/link';
 import { Json } from './types/json';
-import { Graph, GraphData } from './Graph';
-import { Tooltip } from 'react-tooltip';
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { LinkType, LinskNotes } from './types/link';
 import { Collapsible } from './components/Collapsible';
 import { Switch } from './components/Switch';
+import { generateNodes } from './getters/generateNodes';
+import { Graph, GraphData } from './Graph';
 
 export function App() {
   const { linksConfig } = useLinksConfig();
@@ -30,42 +23,26 @@ export function App() {
   // const [links, setLinks] = useState<GraphLink[] | undefined>(undefined);
 
   const [data, setData] = useState<GraphData>(undefined);
+  // const [selectedNode, setSelectedNode] = useState<GraphNode | undefined>(
+  //   undefined
+  // );
 
   useEffect(() => {
     if (!json) {
       return;
     }
-    const endpoints = getEndpointsNodes(json);
-    const containers = getContainersNodes(json, endpoints);
-    const schedules = getScheduleNodes(json);
-    const edgeStacks = getEdgeStacksNodes(json);
-    const edgeGroups = getEdgeGroupsNodes(json);
-    const endpointGroups = getEndpointGroupsNodes(json);
-    const tags = getTagsNodes(json);
+    const nodes = generateNodes(json);
 
     const data: GraphData = {
-      nodes: [
-        ...endpoints,
-        ...containers,
-        ...schedules,
-        ...edgeStacks,
-        ...edgeGroups,
-        ...endpointGroups,
-        ...tags,
-      ],
+      nodes: Object.values(nodes).reduce(
+        (acc, v) => acc.concat(v),
+        [] as GraphNode[]
+      ),
       links: [],
     };
 
     setData(data);
-    setNodes({
-      endpoints,
-      containers,
-      schedules,
-      edgeStacks,
-      edgeGroups,
-      endpointGroups,
-      tags,
-    });
+    setNodes(nodes);
   }, [json]);
 
   const render = useCallback(() => {
@@ -80,20 +57,23 @@ export function App() {
   return (
     <div className='relative bg-black h-screen w-screen'>
       <div className='absolute top-2.5 left-2.5 bg-white z-50 rounded p-2 flex flex-col gap-2'>
-        <Collapsible trigger='Options' open>
-          <OptionsPanel
-            data={data}
-            json={json}
-            render={render}
-            setData={setData}
-            setJson={setJson}
-          />
-        </Collapsible>
+        <OptionsPanel
+          data={data}
+          json={json}
+          render={render}
+          setData={setData}
+          setJson={setJson}
+        />
         <Collapsible trigger='Relations'>
           <LinkOptionsPanel />
         </Collapsible>
       </div>
-      {data && data.links.length && <Graph graphData={data} />}
+      {data && data.links.length && (
+        <Graph
+          graphData={data}
+          // onNodeClick={} onNodeRightClick={}
+        />
+      )}
     </div>
   );
 }
@@ -115,37 +95,43 @@ function OptionsPanel({
   const { options, setOptions } = useOptions();
 
   return (
-    <div className='grid grid-cols-2 gap-2'>
-      <Upload
-        id='file-upload'
-        className='col-span-2'
-        onChange={(v) => setJson(JSON.parse(v))}
-      />
-      <button
-        disabled={!json}
-        className='rounded border border-black px-2 disabled:opacity-50'
-        onClick={render}
-      >
-        Render
-      </button>
-      <button
-        disabled={!json || !data}
-        className='rounded border border-black px-2 disabled:opacity-50'
-        onClick={() => setData({ nodes: data?.nodes || [], links: [] })}
-      >
-        Reset
-      </button>
-      <Switch
-        label='Enable 3D'
-        enabled={options.use3d}
-        onChange={() => setOptions({ use3d: !options.use3d })}
-      />
-      <Switch
-        label='Show names'
-        enabled={options.showNames}
-        onChange={() => setOptions({ showNames: !options.showNames })}
-      />
-    </div>
+    <>
+      <div className='grid grid-cols-2 gap-2'>
+        <Upload
+          id='file-upload'
+          className='col-span-2'
+          onChange={(v) => setJson(JSON.parse(v))}
+        />
+        <button
+          disabled={!json}
+          className='rounded border border-black px-2 disabled:opacity-50'
+          onClick={render}
+        >
+          Render
+        </button>
+        <button
+          disabled={!json || !data}
+          className='rounded border border-black px-2 disabled:opacity-50'
+          onClick={() => setData({ nodes: data?.nodes || [], links: [] })}
+        >
+          Reset
+        </button>
+      </div>
+      <Collapsible trigger='Options'>
+        <div className='grid grid-cols-2'>
+          <Switch
+            label='Enable 3D'
+            enabled={options.use3d}
+            onChange={() => setOptions({ use3d: !options.use3d })}
+          />
+          <Switch
+            label='Show names'
+            enabled={options.showNames}
+            onChange={() => setOptions({ showNames: !options.showNames })}
+          />
+        </div>
+      </Collapsible>
+    </>
   );
 }
 
