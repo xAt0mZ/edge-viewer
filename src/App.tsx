@@ -7,9 +7,8 @@ import { Upload } from './components/Upload';
 import { useOptions } from './hooks/useOptions';
 import { useLinksConfig } from './hooks/useLinks';
 import { GraphNode, Nodes } from './types/node';
-// import { GraphLink } from './types/link';
 import { Json } from './types/json';
-import { GraphLink, LinkType, LinskNotes } from './types/link';
+import { LinkType, LinskNotes } from './types/link';
 import { Collapsible } from './components/Collapsible';
 import { Switch } from './components/Switch';
 import { generateNodes } from './getters/generateNodes';
@@ -57,11 +56,7 @@ export function App() {
     (focusedNode: GraphNode) => {
       if (data?.links.length) {
         if (focusedNode && focusedNode.graphId != selectedNode?.graphId) {
-          data.links.forEach((l) => {
-            const link = l as GraphLink & {
-              source: { graphId: string };
-              target: { graphId: string };
-            };
+          data.links.forEach((link) => {
             link.visible =
               link.source.graphId === focusedNode.graphId ||
               link.target.graphId === focusedNode.graphId;

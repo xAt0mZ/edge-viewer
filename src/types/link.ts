@@ -1,3 +1,5 @@
+import { GraphNode } from './node';
+
 export enum LinkType {
   CONTAINER_TO_ENDPOINT = 'container-to-endpoint',
   SCHEDULE_TO_CONTAINER = 'schedule-to-container',
@@ -25,7 +27,8 @@ export const LinskNotes: { [v in LinkType]: string } = {
   [LinkType.TAG_TO_ENDPOINT]: 'Endpoint configuration',
   [LinkType.TAG_TO_ENDPOINTGROUP]: 'Endpoint group configuration',
   [LinkType.ENDPOINTGROUP_TO_ENDPOINT]: 'Endpoint group configuration',
-  [LinkType.EDGESTACK_TO_CONTAINER]: "Retrieved from containers label 'com.docker.compose.project.working_dir' if it contains '/edge_stacks/'",
+  [LinkType.EDGESTACK_TO_CONTAINER]:
+    "Retrieved from containers label 'com.docker.compose.project.working_dir' if it contains '/edge_stacks/'",
 };
 
 export type LinksConfig = {
@@ -34,8 +37,8 @@ export type LinksConfig = {
 
 // graph lib definition
 type LibLink = {
-  source: string; // node.graphId
-  target: string; // node.graphId
+  source: GraphNode;
+  target: GraphNode;
   strength: number;
   distance: number;
 };

@@ -73,8 +73,8 @@ function generate<S extends GraphNode, T extends GraphNode>(
         );
         if (!target) return;
         return {
-          source: inverted ? target.graphId : source.graphId,
-          target: inverted ? source.graphId : target.graphId,
+          source: inverted ? target : source,
+          target: inverted ? source : target,
           dots: 1,
           visible: true,
           type,
@@ -96,8 +96,8 @@ function edgeGroupsToTags(
         const tag = tags.find((t) => t.id === id);
         if (!tag) return;
         return {
-          source: group.graphId,
-          target: tag.graphId,
+          source: group,
+          target: tag,
           dots: 1,
           visible: true,
           type,
@@ -120,8 +120,8 @@ function tagsToEndpoints(
           const tag = tags.find((t) => t.id === id);
           if (!tag) return;
           return {
-            source: tag.graphId,
-            target: e.graphId,
+            source: tag,
+            target: e,
             dots: 1,
             visible: true,
             type,
@@ -145,8 +145,8 @@ function tagsToEndpointGroups(
           const tag = tags.find((t) => t.id === id);
           if (!tag) return;
           return {
-            source: tag.graphId,
-            target: e.graphId,
+            source: tag,
+            target: e,
             dots: 1,
             visible: true,
             type,
@@ -169,8 +169,8 @@ function endpointGroupsToEndpoints(
         const group = endpointGroups.find((g) => g.id === e.endpointGroup);
         if (!group) return;
         return {
-          source: group.graphId,
-          target: e.graphId,
+          source: group,
+          target: e,
           dots: 1,
           visible: true,
           type,
@@ -231,8 +231,8 @@ function schedulesToEdgeGroups(
         const group = edgeGroups.find((g) => g.id === id);
         if (!group) return;
         return {
-          source: s.graphId,
-          target: group.graphId,
+          source: s,
+          target: group,
           dots: 1,
           visible: true,
           type,
@@ -254,8 +254,8 @@ function edgeStacksToEdgeGroups(
         const group = edgeGroups.find((g) => g.id === e);
         if (!group) return;
         return {
-          source: s.graphId,
-          target: group.graphId,
+          source: s,
+          target: group,
           dots: 1,
           visible: true,
           type,
@@ -290,8 +290,8 @@ function edgeGroupsToEndpoints(
         const endpoint = endpoints.find((i) => i.id === e);
         if (!endpoint) return;
         return {
-          source: g.graphId,
-          target: endpoint.graphId,
+          source: g,
+          target: endpoint,
           dots: 1,
           visible: true,
           type,
