@@ -36,6 +36,8 @@ export type LinksConfig = {
 type LibLink = {
   source: string; // node.graphId
   target: string; // node.graphId
+  strength: number;
+  distance: number;
 };
 
 export type GraphLink = LibLink & {

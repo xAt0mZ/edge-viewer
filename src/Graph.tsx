@@ -1,4 +1,4 @@
-import { ComponentPropsWithRef } from 'react';
+import { ComponentPropsWithRef, useRef } from 'react';
 import { ForceGraph2D, ForceGraph3D } from 'react-force-graph';
 import SpriteText from 'three-spritetext';
 
@@ -67,11 +67,29 @@ export function Graph({ graphData }: Props) {
 
 type Props2D = ComponentPropsWithRef<typeof ForceGraph2D<GraphNode, GraphLink>>;
 function Graph2D(props: Props2D) {
+  const fgRef: Props2D['ref'] = useRef();
+
+  // useEffect(() => {
+  //   const fg = fgRef.current;
+  //   if (!fg) return;
+  //   // const charge = fg.d3Force('charge');
+  //   // fg.d3Force('charge', charge.)
+  //   // fg.d3Force('link', () => ({}))
+  //   // fg.d3Force('charge', () => ({}))
+  //   // fg.d3Force('charge')!.strength(-1)
+  //   fg.d3Force('link')!
+  //     .distance((link: GraphLink) => link.distance)
+  //     .strength((link: GraphLink) => link.strength);
+  //   console.log('link', fg.d3Force('link'));
+  //   console.log('charge', fg.d3Force('charge'));
+  // }, []);
+
   const { options } = useOptions();
 
   return (
     <ForceGraph2D<GraphNode, GraphLink>
       {...props}
+      ref={fgRef}
       nodeRelSize={options.showNames ? 1 : undefined}
       nodeCanvasObject={
         !options.showNames

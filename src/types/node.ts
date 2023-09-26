@@ -11,6 +11,7 @@ export type NodeType =
 type LibNode = {
   graphId: string; // differenciate nodes (must be unique)
   visible: boolean; // controls the visibility of a node
+  // weight: number;
 };
 export type GraphNode = LibNode & {
   name: string; // displayed in the graph

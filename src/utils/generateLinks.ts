@@ -51,12 +51,19 @@ export function generateLinks(
   );
 }
 
+type GenerateOptions = Pick<GraphLink, 'strength' | 'distance'> & {
+  inverted?: boolean;
+};
 function generate<S extends GraphNode, T extends GraphNode>(
   type: LinkType,
   sources: S[],
   targets: T[],
   targetFinderFunc: (source: S, target: T) => boolean,
-  inverted = false
+  { strength = 1, inverted = false, distance = 1 }: Partial<GenerateOptions> = {
+    inverted: false,
+    strength: 1,
+    distance: 1
+  }
 ): GraphLink[] {
   return compact(
     flattenDeep(
@@ -71,6 +78,8 @@ function generate<S extends GraphNode, T extends GraphNode>(
           dots: 1,
           visible: true,
           type,
+          strength,
+          distance
         };
       })
     )
@@ -92,6 +101,8 @@ function edgeGroupsToTags(
           dots: 1,
           visible: true,
           type,
+          distance: 1,
+          strength: 1
         };
       })
     )
@@ -114,6 +125,8 @@ function tagsToEndpoints(
             dots: 1,
             visible: true,
             type,
+            distance: 1,
+            strength: 1
           };
         })
       )
@@ -137,6 +150,8 @@ function tagsToEndpointGroups(
             dots: 1,
             visible: true,
             type,
+            distance: 1,
+            strength: 1
           };
         })
       )
@@ -159,6 +174,8 @@ function endpointGroupsToEndpoints(
           dots: 1,
           visible: true,
           type,
+          distance: 1,
+          strength: 1
         };
       })
     )
@@ -173,7 +190,8 @@ function containersToEndpoints(
     type,
     containers,
     endpoints,
-    (container, endpoint) => container.endpoint === endpoint.id
+    (container, endpoint) => container.endpoint === endpoint.id,
+    { strength: 1, distance: 1 }
   );
 }
 
@@ -186,7 +204,7 @@ function schedulesToContainers(
     containers,
     schedules,
     (container, schedule) => schedule.id.toString() === container.schedule,
-    true
+    { inverted: true }
   );
 }
 
@@ -199,7 +217,7 @@ function schedulesToEdgeStacks(
     edgeStacks,
     schedules,
     (stack, schedule) => stack.schedule === schedule.id,
-    true
+    { inverted: true }
   );
 }
 
@@ -218,6 +236,8 @@ function schedulesToEdgeGroups(
           dots: 1,
           visible: true,
           type,
+          distance: 1,
+          strength: 1
         };
       })
     )
@@ -239,6 +259,8 @@ function edgeStacksToEdgeGroups(
           dots: 1,
           visible: true,
           type,
+          distance: 1,
+          strength: 1
         };
       })
     )
@@ -254,7 +276,7 @@ function edgeStacksToContainers(
     containers,
     edgeStacks,
     (c, e) => c.edgeStack === e.id,
-    true
+    { inverted: true }
   );
 }
 
@@ -273,6 +295,8 @@ function edgeGroupsToEndpoints(
           dots: 1,
           visible: true,
           type,
+          distance: 1,
+          strength: 1
         };
       })
     )
