@@ -9,7 +9,7 @@ import { useLinksConfig } from './hooks/useLinks';
 import { GraphNode, Nodes } from './types/node';
 // import { GraphLink } from './types/link';
 import { Json } from './types/json';
-import { LinkType, LinskNotes } from './types/link';
+import { GraphLink, LinkType, LinskNotes } from './types/link';
 import { Collapsible } from './components/Collapsible';
 import { Switch } from './components/Switch';
 import { generateNodes } from './getters/generateNodes';
@@ -20,12 +20,11 @@ export function App() {
 
   const [json, setJson] = useState<Json | undefined>(undefined);
   const [nodes, setNodes] = useState<Nodes | undefined>(undefined);
-  // const [links, setLinks] = useState<GraphLink[] | undefined>(undefined);
 
   const [data, setData] = useState<GraphData>(undefined);
-  // const [selectedNode, setSelectedNode] = useState<GraphNode | undefined>(
-  //   undefined
-  // );
+  const [selectedNode, setSelectedNode] = useState<GraphNode | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     if (!json) {
@@ -54,6 +53,29 @@ export function App() {
     setData({ ...data, links });
   }, [json, nodes, data, linksConfig]);
 
+  const focusNode = useCallback(
+    (focusedNode: GraphNode) => {
+      if (data?.links.length) {
+        if (focusedNode && focusedNode.graphId != selectedNode?.graphId) {
+          data.links.forEach((l) => {
+            const link = l as GraphLink & {
+              source: { graphId: string };
+              target: { graphId: string };
+            };
+            link.visible =
+              link.source.graphId === focusedNode.graphId ||
+              link.target.graphId === focusedNode.graphId;
+          });
+          setSelectedNode(focusedNode)
+        } else {
+          data.links.forEach((l) => (l.visible = true));
+          setSelectedNode(undefined);
+        }
+      }
+    },
+    [data?.links, selectedNode]
+  );
+
   return (
     <div className='relative bg-black h-screen w-screen'>
       <div className='absolute top-2.5 left-2.5 bg-white z-50 rounded p-2 flex flex-col gap-2'>
@@ -69,10 +91,7 @@ export function App() {
         </Collapsible>
       </div>
       {data && data.links.length && (
-        <Graph
-          graphData={data}
-          // onNodeClick={} onNodeRightClick={}
-        />
+        <Graph graphData={data} onNodeRightClick={focusNode} />
       )}
     </div>
   );

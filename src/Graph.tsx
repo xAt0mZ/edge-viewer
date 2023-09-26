@@ -2,7 +2,7 @@ import { ComponentPropsWithRef, useRef } from 'react';
 import { ForceGraph2D, ForceGraph3D } from 'react-force-graph';
 import SpriteText from 'three-spritetext';
 
-import { GraphNode } from './types/node';
+import { GraphNode, NodeType } from './types/node';
 import { GraphLink } from './types/link';
 import { useOptions } from './hooks/useOptions';
 import { useWindowSize } from '@react-hook/window-size';
@@ -34,14 +34,14 @@ type NodeClickActions =
 type Props = NodeClickActions & {
   graphData: GraphData;
 };
-export function Graph({ graphData }: Props) {
+export function Graph({ graphData, ...nodeClickActions }: Props) {
   const { options } = useOptions();
   const [width, height] = useWindowSize();
 
   const commonProps: CommonProps = {
     nodeId: 'graphId',
     nodeLabel: (n: GraphNode) =>
-      `<div style="display: flex; flex-direction: column;">
+      `<div style="display: flex; flex-direction: column; background-color: black; padding: 0.5rem;">
         <span>${n.graphId.slice(0, 30)}</span>
         <span>${n.name}</span>
       </div>`,
@@ -59,9 +59,9 @@ export function Graph({ graphData }: Props) {
   };
 
   return options.use3d ? (
-    <Graph3D graphData={graphData} {...commonProps} />
+    <Graph3D graphData={graphData} {...commonProps} {...nodeClickActions} />
   ) : (
-    <Graph2D graphData={graphData} {...commonProps} />
+    <Graph2D graphData={graphData} {...commonProps} {...nodeClickActions} />
   );
 }
 
@@ -95,52 +95,91 @@ function Graph2D(props: Props2D) {
         !options.showNames
           ? undefined
           : (node, ctx, globalScale) => {
-              const label = node.name as string;
-              const fontSize = 20 / globalScale;
+              const nodeType = node.type as string;
+              const nodeName = node.name;
+
+              const fontSize = 16 / globalScale;
+
               ctx.font = `${fontSize}px Sans-serif`;
-              const textWidth = ctx.measureText(label).width;
-              const bckgDimensions = [textWidth, fontSize].map(
-                (n) => n + fontSize * 0.2
-              ); // some padding
+
+              const bgDimensions = getBgDimensions(
+                ctx,
+                fontSize,
+                nodeType,
+                nodeName
+              );
+
+              // draw border
               ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
               ctx.lineWidth = 1 / globalScale;
               ctx.strokeRect(
-                node.x! - bckgDimensions[0] / 2,
-                node.y! - bckgDimensions[1] / 2,
-                bckgDimensions[0],
-                bckgDimensions[1]
+                node.x! - bgDimensions.x / 2,
+                node.y! - bgDimensions.y / 2,
+                bgDimensions.x,
+                bgDimensions.y
               );
+
+              // draw background
               ctx.fillStyle = '#000000';
               ctx.fillRect(
-                node.x! - bckgDimensions[0] / 2,
-                node.y! - bckgDimensions[1] / 2,
-                bckgDimensions[0],
-                bckgDimensions[1]
+                node.x! - bgDimensions.x / 2,
+                node.y! - bgDimensions.y / 2,
+                bgDimensions.x,
+                bgDimensions.y
               );
+
+              // draw text
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               ctx.fillStyle = node.color;
-              ctx.fillText(label, node.x!, node.y!);
-
-              node.__bckgDimensions = bckgDimensions; // to re-use in nodePointerAreaPaint
+              ctx.fillText(nodeType, node.x!, node.y! - fontSize / 2);
+              ctx.fillText(nodeName, node.x!, node.y! + fontSize / 2);
             }
       }
       nodePointerAreaPaint={
         !options.showNames
           ? undefined
-          : (node, color, ctx) => {
+          : (node, color, ctx, globalScale) => {
               ctx.fillStyle = color;
-              const bckgDimensions: [number, number] = node.__bckgDimensions;
-              bckgDimensions &&
-                ctx.fillRect(
-                  node.x! - bckgDimensions[0] / 2,
-                  node.y! - bckgDimensions[1] / 2,
-                  ...bckgDimensions
-                );
+
+              const fontSize = 16 / globalScale;
+              const bgDimensions = getBgDimensions(
+                ctx,
+                fontSize,
+                node.type as string,
+                node.name
+              );
+
+              ctx.fillRect(
+                node.x! - bgDimensions.x / 2,
+                node.y! - bgDimensions.y / 2,
+                bgDimensions.x,
+                bgDimensions.y
+              );
             }
       }
     />
   );
+}
+
+function getBgDimensions(
+  ctx: CanvasRenderingContext2D,
+  fontSize: number,
+  nodeType: string,
+  nodeName: string
+) {
+  const padding = fontSize * 0.2;
+
+  const textWidth = Math.max(
+    ctx.measureText(nodeType).width,
+    ctx.measureText(nodeName).width
+  );
+
+  const bgDimensions = {
+    x: textWidth + padding,
+    y: (fontSize + padding) * 2, // 2 lines text
+  };
+  return bgDimensions;
 }
 
 type Props3D = ComponentPropsWithRef<typeof ForceGraph3D<GraphNode, GraphLink>>;
@@ -151,11 +190,23 @@ function Graph3D(props: Props3D) {
     <ForceGraph3D<GraphNode, GraphLink>
       {...props}
       linkOpacity={0.8} // default is 0.2 which is not bright enough
+      nodeThreeObjectExtend={!!options.showNames}
       nodeThreeObject={
         !options.showNames
           ? undefined
-          : (node: { name: string; color: string }) =>
-              new SpriteText(node.name, 8, node.color)
+          : (node: { name: string; color: string; type: NodeType }) => {
+              const sprite = new SpriteText(
+                `${node.type}\n${node.name}`,
+                2,
+                node.color
+              );
+              sprite.backgroundColor = '#000000';
+              sprite.borderColor = '#ffffff';
+              sprite.borderWidth = 0.4;
+              sprite.borderRadius = 4;
+              sprite.padding = 1;
+              return sprite;
+            }
       }
     />
   );
