@@ -9,6 +9,13 @@ import { useWindowSize } from '@react-hook/window-size';
 
 export type GraphData = Props2D['graphData'] | Props3D['graphData'];
 
+// type MatchingKeys<T, U> = {
+//   [K in keyof T & keyof U]: T[K] extends U[K] ? K : never;
+// };
+// type CommonKeys = MatchingKeys<Props2D, Props3D>[keyof Props2D & keyof Props3D];
+
+// type CommonKeys = Extract<keyof Props2D, keyof Props3D>;
+
 type CommonKeys =
   | 'nodeId'
   | 'nodeLabel'
@@ -41,7 +48,7 @@ export function Graph({ graphData, ...nodeClickActions }: Props) {
   const commonProps: CommonProps = {
     nodeId: 'graphId',
     nodeLabel: (n: GraphNode) =>
-      `<div style="display: flex; flex-direction: column; background-color: black; padding: 0.5rem;">
+      `<div style="display: flex; flex-direction: column; align-items: center; background-color: black; padding: 0.5rem;">
         <span>${n.graphId.slice(0, 30)}</span>
         <span>${n.name}</span>
       </div>`,

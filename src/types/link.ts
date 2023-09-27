@@ -48,3 +48,26 @@ export type GraphLink = LibLink & {
   dots: number; // used to control the number of moving dots along the link
   visible: boolean; // used to control the visibility of a link
 };
+
+type MandatoryLinkProps = Pick<GraphLink, 'source' | 'target' | 'type'>;
+export type OptionalGraphLinkProps = Omit<GraphLink, keyof MandatoryLinkProps>;
+
+export function GraphLink({
+  source,
+  target,
+  type,
+  distance = 1,
+  dots = 1,
+  strength = 1,
+  visible = true,
+}: MandatoryLinkProps & Partial<OptionalGraphLinkProps>): GraphLink {
+  return {
+    source,
+    target,
+    type,
+    distance,
+    dots,
+    strength,
+    visible,
+  };
+}

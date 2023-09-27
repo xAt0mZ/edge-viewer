@@ -48,8 +48,17 @@ export function App() {
       return;
     }
 
-    const links = generateLinks(nodes, linksConfig);
-    setData({ ...data, links });
+    const [links, newNodes] = generateLinks(nodes, linksConfig);
+    console.log(nodes)
+    console.log(newNodes)
+    setNodes(newNodes);
+    setData({
+      nodes: Object.values(newNodes).reduce(
+        (acc, v) => acc.concat(v),
+        [] as GraphNode[]
+      ),
+      links,
+    });
   }, [json, nodes, data, linksConfig]);
 
   const focusNode = useCallback(
@@ -61,7 +70,7 @@ export function App() {
               link.source.graphId === focusedNode.graphId ||
               link.target.graphId === focusedNode.graphId;
           });
-          setSelectedNode(focusedNode)
+          setSelectedNode(focusedNode);
         } else {
           data.links.forEach((l) => (l.visible = true));
           setSelectedNode(undefined);
